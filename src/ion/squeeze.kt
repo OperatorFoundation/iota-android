@@ -323,3 +323,183 @@ fun squeeze_floating(value: Floating): ByteArray
   }
 }
 
+// Deserialize floating point numbers from big endian byte arrays
+fun expand_floating(value: ByteArray): Floating?
+{
+  if(value.isEmpty())
+  {
+    return null
+  }
+
+  val length = value[0].toUByte().toInt()
+
+  if(length == 0)
+  {
+    return Floating.IonFloat(0.0f)
+  }
+
+  if(value.size < 1 + length)
+  {
+    return null
+  }
+
+  val floatBytes = value.sliceArray(1 until 1 + length)
+
+  return when(length)
+  {
+    4 ->
+    {
+      val buffer = ByteBuffer.wrap(floatBytes) // Uses big endian by default
+      val f = buffer.float
+      Floating.IonFloat(f)
+    }
+    8 ->
+    {
+      val buffer = ByteBuffer.wrap(floatBytes) // Uses big endian by default
+      val d = buffer.double
+      Floating.IonDouble(d)
+    }
+    else -> null
+  }
+}
+
+// Deserialize floating point numbers from a Connection
+fun expand_conn_floating(conn: Connection): Floating?
+{
+  val length = conn.readOne().toUByte().toInt()
+
+  if(length == 0)
+  {
+    return Floating.IonFloat(0.0f)
+  }
+
+  val floatBytes = conn.read(length)
+
+  return when(length)
+  {
+    Float.SIZE_BYTES ->
+    {
+      val buffer = ByteBuffer.wrap(floatBytes) // Uses big endian by default
+      val f = buffer.float
+      Floating.IonFloat(f)
+    }
+    Double.SIZE_BYTES ->
+    {
+      val buffer = ByteBuffer.wrap(floatBytes) // Uses big endian by default
+      val d = buffer.double
+      Floating.IonDouble(d)
+    }
+    else -> null
+  }
+}
+
+// Encode an array of integers in the fewest number of bytes, plus an encoded integer length to tell us how many bytes that is.
+fun squeeze_ints(value: List<Int>): ByteArray
+{
+  // The only case where the length can be zero is for the number 0.
+  if(value.isEmpty())
+  {
+    return byteArrayOf(0)
+  }
+
+  // Allocate the result
+  val result = mutableListOf<Byte>()
+
+  val size = value.size
+  val sizeBytes = squeeze_int(size)
+
+  result.addAll(sizeBytes.toList())
+
+  for(integer in value)
+  {
+    val valueBytes = squeeze_int(integer)
+    result.addAll(valueBytes.toList())
+  }
+
+  return result.toByteArray()
+}
+
+// Expand a byte array into a List<Int> and remaining bytes
+fun expand_ints(value: ByteArray): Pair<List<Int>, ByteArray>
+{
+  // If input array is empty, we have nothing to parse
+  if(value.isEmpty())
+  {
+    return Pair(emptyList(), value)
+  }
+
+  val integers = mutableListOf<Int>()
+
+  // The first byte of the input array is the length at the beginning of the array with the integer for us to parse, the rest of the array is extra
+  val sizeResult = expand_int(value)
+  val varsize = sizeResult.first
+  var rest = sizeResult.second
+
+  when(varsize)
+  {
+    is Varint.IonInt ->
+    {
+      val size = varsize.value
+
+      // The only case where the length can be zero is for empty array [].
+      if(size == 0)
+      {
+        return Pair(emptyList(), rest)
+      }
+
+      for(count in 0 until size)
+      {
+        val intResult = expand_int(rest)
+        val varinteger = intResult.first
+        rest = intResult.second
+
+        when(varinteger)
+        {
+          is Varint.IonInt ->
+          {
+            val integer = varinteger.value
+            integers.add(integer)
+          }
+          is Varint.IonInts ->
+          {
+            // varint elements in integer arrays are not yet fully implemented
+            return Pair(emptyList(), byteArrayOf())
+          }
+        }
+      }
+
+      return Pair(integers, rest)
+    }
+    is Varint.IonInts ->
+    {
+      // varint sizes are not yet fully implemented
+      return Pair(emptyList(), byteArrayOf())
+    }
+  }
+}
+
+// Encode an array of floats in the fewest number of bytes, plus an encoded integer length to tell us how many bytes that is.
+fun squeeze_floats(value: List<Float>): ByteArray
+{
+  // The only case where the length can be zero is for the number 0.
+  if(value.isEmpty())
+  {
+    return byteArrayOf(0)
+  }
+
+  // Allocate the result
+  val result = mutableListOf<Byte>()
+
+  val size = value.size
+  val sizeBytes = squeeze_int(size)
+
+  result.addAll(sizeBytes.toList())
+
+  for(f in value)
+  {
+    val valueBytes = squeeze_floating(Floating.IonFloat(f))
+    result.addAll(valueBytes.toList())
+  }
+
+  return result.toByteArray()
+}
