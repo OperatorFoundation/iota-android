@@ -68,7 +68,7 @@ sealed class I
   data class IonFloat(val value: Float) : I()
   data class WordArray(val value: List<Int>) : I()
   data class FloatArray(val value: List<Float>) : I()
-  data class MixedArray(val value: List<I>) : I()
+  data class MixedArray(val value: List<Storage>) : I()
 }
 
 data class Storage(val o: Int, val t: Int, val i: I)

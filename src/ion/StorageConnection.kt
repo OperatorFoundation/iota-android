@@ -1,2 +1,4 @@
+package ion
+
 interface StorageConnection {
 }

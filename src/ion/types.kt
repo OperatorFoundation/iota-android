@@ -1,3 +1,5 @@
+package ion
+
 sealed class Varint
 {
   data class IonInt(val value: Int) : Varint()
