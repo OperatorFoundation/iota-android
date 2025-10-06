@@ -1,4 +1,0 @@
-package ion
-
-interface StorageConnection {
-}

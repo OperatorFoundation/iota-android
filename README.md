@@ -4,14 +4,21 @@
 
  [Operator](https://operatorfoundation.org/) makes useable tools to help people around the world with censorship, security, and privacy.
 
-# ion
+# iota
 
-ion, a lightweight, portable, and cross-platform binary data exchange format
+iota, a lightweight, portable, and cross-platform array programming language
 
-# Specification
+# Implemenetations
 
-[ion specification](https://github.com/OperatorFoundation/ion)
+[iota-cpp for C++17 on Arduinos](https://github.com/blanu/iota-cpp)
+[iota-python for Python and Micropython](https://github.com/blanu/iota-python)
 
-# ion-kotlin
+# Utilities
 
-ion-kotlin is a cross-platform implementation of the ion protocol for Kotlin/Android
+[iota-wrapper for generating iota wrappers for Arduino C++ libraries](https://github.com/OperatorFoundation/iota-wrapper)
+
+# iota-kotlin
+
+iota-kotlin is a cross-platform implementation of the iota programming language for Kotlin/Android.
+In the current implementation, no instructions are implemented in Kotlin. Instead, iota-cpp is called on an Arduino via RPC.
+This allows Android applications written in Kotlin to drive Arduinos remotely by sending iota programs.
