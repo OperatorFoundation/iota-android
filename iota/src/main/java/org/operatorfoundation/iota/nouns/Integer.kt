@@ -70,12 +70,14 @@ object Integer {
 
         val chunks = mutableListOf<Int>()
         var remaining = absValue
-        val mask = BigInteger.valueOf(0x7FFFFFFFL)  // 31-bit mask
+        val mask = BigInteger.valueOf(0xFFFFFFFFL)  // 32-bit mask
 
-        // Extract 31-bit chunks (process from least significant to most significant)
+        // Extract 32-bit chunks (process from least significant to most significant)
         while (remaining > BigInteger.ZERO) {
-            chunks.add(remaining.and(mask).toInt())
-            remaining = remaining.shiftRight(31)
+            // Get the low 32 bits as unsigned, then reinterpret as signed Int
+            val chunk = remaining.and(mask).toLong().toInt()
+            chunks.add(chunk)
+            remaining = remaining.shiftRight(32)
         }
 
         // Reverse to get big-endian order
@@ -194,24 +196,27 @@ object Integer {
                 if (list.isEmpty()) throw IllegalArgumentException("Empty WordArray")
                 val isNegative = list[0] == 1
 
-                var result = 0L
-                // Process subsequent items as 31-bit chunks in big-endian order
-                for (idx in 1 until list.size) {
-                    val chunk = list[idx].toUInt().toLong() and 0x7FFFFFFFL
-
-                    // Check if shift would overflow
-                    // For positive: max is Long.MAX_VALUE (result can be up to 4294967295 before shift)
-                    // For negative: max is Long.MAX_VALUE + 1 (result can be up to 4294967296 before shift)
-                    val maxBeforeShift = if (isNegative) 4294967296L else 4294967295L
-                    if (result > maxBeforeShift) {
-                        throw ArithmeticException("WordArray value too large for Long")
-                    }
-
-                    result = (result shl 31) or chunk
+                // Check we don't have too many chunks for Long
+                // Need at most 2 chunks (plus sign bit) = 3 elements total
+                if (list.size > 3) {
+                    throw ArithmeticException("WordArray value too large for Long")
                 }
 
-                // Final validation: check if positive value wrapped to negative
+                var result = 0L
+                // Process subsequent items as 32-bit chunks in big-endian order
+                for (idx in 1 until list.size) {
+                    // Reinterpret as unsigned to preserve bit pattern, then convert to Long
+                    val chunk = list[idx].toUInt().toLong()
+                    result = (result shl 32) or chunk
+                }
+
+                // Check if the positive value is too large for Long
                 if (!isNegative && result < 0) {
+                    throw ArithmeticException("WordArray value too large for Long")
+                }
+
+                // For negative numbers, the absolute value can be at most Long.MAX_VALUE + 1 (for Long.MIN_VALUE)
+                if (isNegative && result.toULong() > (Long.MAX_VALUE.toULong() + 1UL)) {
                     throw ArithmeticException("WordArray value too large for Long")
                 }
 
@@ -239,18 +244,18 @@ object Integer {
                     throw ArithmeticException("Cannot convert negative WordArray to ULong")
                 }
 
+                // Check we don't have too many chunks for ULong
+                // Need at most 2 chunks (plus sign bit) = 3 elements total
+                if (list.size > 3) {
+                    throw ArithmeticException("WordArray value too large for ULong")
+                }
+
                 var result = 0UL
-                // Process subsequent items as 31-bit chunks in big-endian order
+                // Process subsequent items as 32-bit chunks in big-endian order
                 for (idx in 1 until list.size) {
-                    val chunk = list[idx].toUInt().toULong() and 0x7FFFFFFFUL
-
-                    // Check if shift would overflow
-                    // ULong.MAX_VALUE >> 31 = 8589934591 (max safe value before shift)
-                    if (result > 8589934591UL) {
-                        throw ArithmeticException("WordArray value too large for ULong")
-                    }
-
-                    result = (result shl 31) or chunk
+                    // Reinterpret as unsigned to preserve bit pattern
+                    val chunk = list[idx].toUInt().toULong()
+                    result = (result shl 32) or chunk
                 }
 
                 return result
@@ -271,10 +276,11 @@ object Integer {
                 val isNegative = list[0] == 1
                 var result = BigInteger.ZERO
 
-                // Process subsequent items as 31-bit chunks in big-endian order
+                // Process subsequent items as 32-bit chunks in big-endian order
                 for (idx in 1 until list.size) {
-                    val chunk = list[idx].toUInt().toLong() and 0x7FFFFFFFL  // Mask to 31 bits
-                    result = result.shiftLeft(31).or(BigInteger.valueOf(chunk))
+                    // Reinterpret as unsigned to preserve bit pattern
+                    val chunk = list[idx].toUInt().toLong()
+                    result = result.shiftLeft(32).or(BigInteger.valueOf(chunk))
                 }
 
                 return if (isNegative) result.negate() else result
