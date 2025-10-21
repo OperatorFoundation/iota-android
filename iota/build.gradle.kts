@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    `maven-publish`
 }
 
 android {
@@ -25,4 +26,19 @@ dependencies {
     implementation("io.github.OperatorFoundation:ion-android:v1.0.2")
     testImplementation("io.github.OperatorFoundation:ion-android:v1.0.2")  // Add this line
     testImplementation("junit:junit:4.13.2")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("release") {
+            groupId = "com.github.OperatorFoundation"
+            artifactId = "iota-android"
+            // JitPack will pass the git tag as the VERSION environment variable
+            version = System.getenv("VERSION") ?: project.version.toString()
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
 }
