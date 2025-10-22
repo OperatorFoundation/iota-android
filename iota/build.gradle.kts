@@ -23,8 +23,8 @@ android {
 }
 
 dependencies {
-    implementation("io.github.OperatorFoundation:ion-android:v1.0.2")
-    testImplementation("io.github.OperatorFoundation:ion-android:v1.0.2")  // Add this line
+    implementation("com.github.OperatorFoundation:ion-android:v1.0.6")
+    testImplementation("com.github.OperatorFoundation:ion-android:v1.0.6")
     testImplementation("junit:junit:4.13.2")
 }
 

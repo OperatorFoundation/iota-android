@@ -5,6 +5,7 @@ package org.operatorfoundation.iota.nouns
 import org.operatorfoundation.ion.storage.Storage
 import org.operatorfoundation.ion.storage.I
 import org.operatorfoundation.ion.storage.Word
+import org.operatorfoundation.ion.storage.WordArray
 import org.operatorfoundation.ion.storage.StorageType
 import org.operatorfoundation.ion.storage.NounType
 import org.operatorfoundation.ion.Connection
@@ -87,7 +88,7 @@ object Integer {
         val wordArray = mutableListOf(if (isNegative) 1 else 0)
         wordArray.addAll(chunks)
 
-        return Storage(0, 0, I.WordArray(wordArray))
+        return WordArray.make(wordArray, NounType.INTEGER.value)
     }
 
     fun toByte(i: Storage): Byte {
@@ -160,6 +161,14 @@ object Integer {
         when (val ii = i.i) {
             is I.Word -> {
                 return ii.value  // Already an Int, no conversion or range check needed!
+            }
+            is I.WordArray -> {
+                // Convert through Long, then check range
+                val longValue = toLong(i)
+                if (longValue < Int.MIN_VALUE || longValue > Int.MAX_VALUE) {
+                    throw ArithmeticException("WordArray value out of Int range")
+                }
+                return longValue.toInt()
             }
             else -> throw IllegalArgumentException("Cannot convert ${ii::class.simpleName} to Int")
         }
