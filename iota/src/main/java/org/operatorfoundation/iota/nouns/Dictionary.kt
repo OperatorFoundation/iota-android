@@ -6,7 +6,7 @@ import org.operatorfoundation.ion.storage.Storage
 import org.operatorfoundation.ion.storage.MixedArray
 import org.operatorfoundation.ion.storage.StorageType
 import org.operatorfoundation.ion.storage.NounType
-import org.operatorfoundation.ion.Connection
+import org.operatorfoundation.transmission.Connection
 
 object Dictionary {
     

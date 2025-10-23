@@ -23,8 +23,9 @@ android {
 }
 
 dependencies {
-    implementation("com.github.OperatorFoundation:ion-android:v1.0.6")
-    testImplementation("com.github.OperatorFoundation:ion-android:v1.0.6")
+    implementation("com.github.OperatorFoundation:TransmissionAndroid:v1.3.4")
+    implementation("com.github.OperatorFoundation:ion-android:v1.0.7")
+    testImplementation("com.github.OperatorFoundation:ion-android:v1.0.7")
     testImplementation("junit:junit:4.13.2")
 }
 

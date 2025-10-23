@@ -8,7 +8,7 @@ import org.operatorfoundation.ion.storage.Word
 import org.operatorfoundation.ion.storage.WordArray
 import org.operatorfoundation.ion.storage.StorageType
 import org.operatorfoundation.ion.storage.NounType
-import org.operatorfoundation.ion.Connection
+import org.operatorfoundation.transmission.Connection
 import org.operatorfoundation.ion.squeeze_bigint
 import java.math.BigInteger
 

@@ -8,7 +8,7 @@ import org.operatorfoundation.ion.storage.FloatArray
 import org.operatorfoundation.ion.storage.MixedArray
 import org.operatorfoundation.ion.storage.StorageType
 import org.operatorfoundation.ion.storage.NounType
-import org.operatorfoundation.ion.Connection
+import org.operatorfoundation.transmission.Connection
 import org.operatorfoundation.ion.squeeze_ints
 import org.operatorfoundation.ion.squeeze_floats
 import org.operatorfoundation.ion.storage.I

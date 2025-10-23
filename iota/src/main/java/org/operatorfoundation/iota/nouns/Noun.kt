@@ -4,7 +4,7 @@ package org.operatorfoundation.iota.nouns
 
 import org.operatorfoundation.ion.storage.*
 import org.operatorfoundation.ion.storage.FloatArray
-import org.operatorfoundation.ion.Connection
+import org.operatorfoundation.transmission.Connection
 
 object Noun {
     fun mix(i: Storage): Storage {
@@ -79,9 +79,22 @@ object Noun {
     }
 
     // Serialization - from connection
-    fun from_conn(conn: Connection): Storage? {
-        val storageType = conn.readOne().toInt() and 0xFF
-        val objectType = conn.readOne().toInt() and 0xFF
+    fun from_conn(conn: Connection): Storage?
+    {
+        val storageBytes = conn.read(1)
+        if(storageBytes == null)
+        {
+            return null
+        }
+
+        val objectBytes = conn.read(1)
+        if(objectBytes == null)
+        {
+            return null
+        }
+
+        val storageType = storageBytes[0].toInt() and 0xFF
+        val objectType = objectBytes[0].toInt() and 0xFF
 
         return when (objectType) {
             NounType.INTEGER.value -> Integer.from_conn(conn, storageType)
