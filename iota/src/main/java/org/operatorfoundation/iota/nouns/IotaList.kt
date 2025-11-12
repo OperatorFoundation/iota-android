@@ -11,6 +11,7 @@ import org.operatorfoundation.ion.storage.NounType
 import org.operatorfoundation.transmission.Connection
 import org.operatorfoundation.ion.squeeze_ints
 import org.operatorfoundation.ion.squeeze_floats
+import org.operatorfoundation.ion.squeeze_int
 import org.operatorfoundation.ion.storage.I
 import java.math.BigInteger
 
@@ -434,6 +435,35 @@ object IotaList {
             }
             
             StorageType.MIXED_ARRAY.value -> {
+                var allIntegers = true
+                when(val ii = i.i)
+                {
+                    is I.MixedArray -> {
+                        for(element in ii.value) {
+                            if(element.o != NounType.INTEGER.value) {
+                                allIntegers = false
+                                break
+                            }
+                        }
+
+                        if(allIntegers) {
+                            val typeBytes = byteArrayOf(StorageType.WORD_ARRAY.value.toByte(), i.o.toByte())
+                            conn.write(typeBytes)
+
+                            val size = ii.value.size
+                            val sizeBytes = squeeze_int(size)
+                            conn.write(sizeBytes)
+
+                            for(element in ii.value) {
+                                Noun.to_conn(conn, element)
+                            }
+
+                            return;
+                        }
+                    }
+                    else -> allIntegers = false
+                }
+
                 // No need to include type here, because it is provided by MixedArray::to_conn
                 MixedArray.to_conn(conn, i)
             }
