@@ -9,6 +9,7 @@ import org.operatorfoundation.ion.storage.StorageType
 import org.operatorfoundation.iota.nouns.Noun
 import org.operatorfoundation.iota.nouns.Integer
 import org.operatorfoundation.ion.Pipe
+import org.operatorfoundation.iota.nouns.IotaList
 
 class IntegerTests
 {
@@ -1342,5 +1343,81 @@ class IntegerTests
         Noun.to_conn(pipe.endA, storage)
         val bytes = pipe.endB.read(expected.size)
         assertArrayEquals(expected, bytes)
+    }
+
+    @Test
+    fun testULongFrequencyListEncodeGolden() {
+        val expected = byteArrayOf(
+            0x02, 0x04, 0x01, 0x02, 0x04, 0x3C, 0x7D, 0x61, 0xD0.toByte(), 0x04, 0x3C, 0x7D, 0x88.toByte(), 0xE0.toByte()
+        )
+
+        val pipe = Pipe()
+
+        val toneCount = 2
+        val toneA = 1014850000UL
+        val toneB = 1014860000UL
+        val tones = mutableListOf<ULong>()
+
+        for (i in 0 until toneCount) {
+            tones.add(if (i % 2 == 0) toneA else toneB)
+        }
+
+        val value = IotaList.makeULongs(tones)
+        Noun.to_conn(pipe.endA, value)
+
+        val result = pipe.endB.read(pipe.endB.available())
+        assertNotNull(result)
+        if(result != null)
+        {
+            println(result.joinToString(", ") { "0x%02X".format(it) })
+            println(expected.joinToString(", ") { "0x%02X".format(it) })
+            assertArrayEquals(result, expected)
+        }
+    }
+
+    @Test
+    fun testULongFrequencyListDecodeGolden() {
+        val pipe = Pipe()
+        val input = byteArrayOf(
+            0x02, 0x04, 0x01, 0x02, 0x04, 0x3C, 0x7D, 0x61, 0xD0.toByte(), 0x04, 0x3C, 0x7D, 0x88.toByte(), 0xE0.toByte()
+        )
+
+        val toneCount = 2
+        val toneA = 1014850000UL
+        val toneB = 1014860000UL
+        val tones = mutableListOf<ULong>()
+
+        for (i in 0 until toneCount) {
+            tones.add(if (i % 2 == 0) toneA else toneB)
+        }
+
+        val expected = IotaList.makeULongs(tones)
+
+        pipe.endA.write(input)
+
+        val result = Noun.from_conn(pipe.endB)
+        assertNotNull(result)
+
+        if(result != null) {
+            assertEquals(result, expected)
+        }
+    }
+
+    @Test
+    fun testULongRoundTrip() {
+        val original: ULong = 0x123456789ABCDEFuL
+
+        // Convert to IotaValue (should become BigIntegerValue)
+        val iotaValue = original.toIotaValue()
+
+        // Convert to Storage
+        val storage = IotaObject.fromKotlin(iotaValue)
+
+        // Convert back to IotaValue
+        val result = IotaObject.toKotlin(storage)
+
+        // Verify
+        assertTrue(result is IotaValue.BigIntValue)
+        assertEquals(BigInteger(original.toString()), (result as IotaValue.BigIntValue).value)
     }
 }

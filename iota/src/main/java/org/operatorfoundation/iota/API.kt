@@ -17,9 +17,11 @@ import org.operatorfoundation.ion.storage.NounType
 import org.operatorfoundation.iota.nouns.ErrorCode
 import org.operatorfoundation.iota.nouns.Character
 import org.operatorfoundation.iota.nouns.Expression
+import java.math.BigInteger
 
 sealed class IotaValue {
     data class IntValue(val value: Int) : IotaValue()
+    data class BigIntValue(val value: BigInteger) : IotaValue()
     data class FloatValue(val value: Float) : IotaValue()
     data class CharValue(val value: Char) : IotaValue()
     data class StringValue(val value: String) : IotaValue()
@@ -33,6 +35,7 @@ sealed class IotaValue {
         
         return when (this) {
             is IntValue -> other is IntValue && value == other.value
+            is BigIntValue -> other is BigIntValue && value == other.value
             is FloatValue -> other is FloatValue && 
                 abs(value - other.value) < Float.MIN_VALUE // Similar to Float::precision
             is CharValue -> other is CharValue && value == other.value
@@ -45,6 +48,7 @@ sealed class IotaValue {
 
     override fun hashCode(): Int = when (this) {
         is IntValue -> value.hashCode()
+        is BigIntValue -> value.hashCode()
         is FloatValue -> value.hashCode()
         is CharValue -> value.hashCode()
         is StringValue -> value.hashCode()
@@ -77,6 +81,28 @@ object KotlinValue {
 // Conversion from Kotlin types to IotaValue
 fun Any?.toIotaValue(): IotaValue = when (this) {
     is Int -> IotaValue.IntValue(this)
+    is Long -> {
+        if (this in Int.MIN_VALUE..Int.MAX_VALUE) {
+            IotaValue.IntValue(this.toInt())
+        } else {
+            IotaValue.BigIntValue(BigInteger.valueOf(this))
+        }
+    }
+    is ULong -> {
+        if (this <= Int.MAX_VALUE.toULong()) {
+            IotaValue.IntValue(this.toInt())
+        } else {
+            IotaValue.BigIntValue(BigInteger(this.toString()))
+        }
+    }
+    is BigInteger -> {
+        if (this >= BigInteger.valueOf(Int.MIN_VALUE.toLong()) &&
+            this <= BigInteger.valueOf(Int.MAX_VALUE.toLong())) {
+            IotaValue.IntValue(this.toInt())
+        } else {
+            IotaValue.BigIntValue(this)
+        }
+    }
     is Float -> IotaValue.FloatValue(this)
     is Double -> IotaValue.FloatValue(this.toFloat())
     is Char -> IotaValue.CharValue(this)
@@ -98,6 +124,7 @@ object IotaObject {
 
     fun fromKotlin(value: IotaValue): Storage = when (value) {
         is IotaValue.IntValue -> Integer.make(value.value)
+        is IotaValue.BigIntValue -> Integer.make(value.value)
         
         is IotaValue.FloatValue -> Real.make(value.value)
         
@@ -142,6 +169,7 @@ object IotaObject {
             NounType.INTEGER.value -> {
                 when (val ii = storage.i) {
                     is I.Word -> return IotaValue.IntValue(ii.value)
+                    is I.WordArray -> return IotaValue.BigIntValue(Integer.toBigInteger(storage))
                     else -> return IotaValue.ErrorValue(Error(ErrorCode.UNSUPPORTED_OBJECT.toString()))
                 }
             }
